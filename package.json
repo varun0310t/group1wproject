@@ -1,0 +1,28 @@
+{
+  "name": "group1wproject",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/varun0310t/group1wproject.git"
+  },
+  "author": "varun",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/varun0310t/group1wproject/issues"
+  },
+  "homepage": "https://github.com/varun0310t/group1wproject#readme",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "express-rate-limit": "^7.4.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.7.0",
+    "redis": "^4.7.0"
+  }
+}
