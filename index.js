@@ -9,18 +9,19 @@ import UserRoute from "./routes/UserRoute.js";
 import OrdersRoute from "./routes/OrdersRoute.js";
 import MenuRoute from "./routes/MenuRoute.js";
 
+const isClusterEnabled = true;
 dotenv.config();
 
 cluster.schedulingPolicy = cluster.SCHED_RR;
 
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5 // limit each IP to 100 requests per windowMs
+    max: 100000000// limit each IP to 100 requests per windowMs
 });
 
 
 
-if (cluster.isMaster) {
+if (cluster.isMaster && isClusterEnabled) {
 
     const cpus = os.cpus().length;
     console.log(`Clustering to ${cpus} CPUs`);
@@ -43,11 +44,13 @@ else {
     MongooseConfig();
     client.connect();
     app.get("/", (req, res) => {
-        res.send("Hello World!, I am worker " + cluster.worker.id + "PID:" + process.pid);
+
+        console.log("Request received by worker", cluster?.worker?.id);
+        res.send("Hello World!, I am worker " + cluster?.worker?.id + "PID:" + process.pid);
     });
 
     app.listen(3000, () => {
-        console.log("Server is running on port 3000 and worker is", cluster.worker.id, "PID:", process.pid);
+        console.log("Server is running on port 3000 and worker is", cluster?.worker?.id, "PID:", process.pid);
     });
 }
 

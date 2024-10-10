@@ -1,6 +1,7 @@
-import { Router } from "express";
+import {  Router } from "express";
 import Order from "../models/OrderModel.js";
 import { verifyToken } from "../utils/verifyTokenUtil.js";
+import redisClient from "../config/RedisConfig.js";
 const router = Router();
 
 
@@ -22,13 +23,8 @@ router.put("/orders/:id/status", async (req, res) => {
         if (!order) {
             return res.status(404).send();
         }
-        redisClient.get(req.params.id, async (err, cachedOrder) => {
-            if (err) throw err;
-
-            if (cachedOrder) {
-                // If order is found in cache, return it
-                redisClient.setex(req.params.id, 3600, JSON.stringify(order));
-            }
+        await redisClient.set(req.params.id, JSON.stringify(order), {
+            EX: 3600 // Cache for 1 hour
         });
         res.send(order);
     } catch (error) {
@@ -38,30 +34,30 @@ router.put("/orders/:id/status", async (req, res) => {
 
 router.get("/orders/:id", async (req, res) => {
     const orderId = req.params.id;
-
+    console.log(orderId);
     // Check if order is in cache
-    redisClient.get(orderId, async (err, cachedOrder) => {
-        if (err) throw err;
+    const cachedata = await redisClient.get(orderId);
 
-        if (cachedOrder) {
-            // If order is found in cache, return it
-            return res.send(JSON.parse(cachedOrder));
-        } else {
-            try {
-                // If order is not in cache, fetch from database
-                const order = await Order.findById(orderId);
-                if (!order) {
-                    return res.status(404).send();
-                }
-
-                // Store order in cache and return it
-                redisClient.setex(orderId, 3600, JSON.stringify(order)); // Cache for 1 hour
-                res.send(order);
-            } catch (error) {
-                res.status(400).send(error);
+    if (cachedata) {
+        console.log("Fetching from cache", cachedata);
+        res.send(JSON.parse(cachedata));
+        return;
+    } else {
+        try {
+            const order = await Order.findById(orderId);
+            if (!order) {
+                return res.status(404).send();
             }
+            console.log("Fetching from MongoDB", JSON.stringify(order));
+            await redisClient.set(orderId, JSON.stringify(order), {
+                EX: 3600 // Cache for 1 hour
+            });
+            res.send(order);
+        } catch (error) {
+            res.status(400).send(error);
         }
-    });
+    }
+
 });
 
 router.delete("/orders/:id", async (req, res) => {
